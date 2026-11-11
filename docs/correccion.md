@@ -279,101 +279,97 @@ $k$ iteraciones, $l = \text{List}()$.
 Esto implica que $P_f(L) == \text{maxAux}(L.\text{head}, L.\text{tail}) == f(L)$
 
 
----
 
-## Punto 4: réplicas perezosas
 
-Como `replicas(m)` genera una secuencia potencialmente infinita, no tiene sentido
-enunciar la corrección sobre una terminación total de la estructura completa.
-Cada elemento se calcula únicamente cuando se pide; por lo tanto, la propiedad
-se enuncia y se demuestra sobre cualquier prefijo finito de los primeros $n$
-elementos solicitados.
+## Punto 3: consultas seguras
 
-### `replicas`
+Sea $r$ un registro (una lista de sismos). Para una región $g$ se define el
+conjunto de sus sismos $r_g = \{\, s \in r \mid s.\text{region} = g \,\}$.
 
-**Especificación.** Sea $R(m, i)$ el término en la posición $i \in \mathbb{N}$
-(contando desde $i = 0$) de la secuencia de réplicas que inicia en la magnitud
-$m$:
+### `conteoSeguro`
+
+**Especificación.** Para toda región $g$ (esté o no en $r$):
 
 ```math
-R(m, i) = \text{redondear}(m \cdot 0.8^i)
+\text{conteoSeguro}(r)(g) = |r_g|
 ```
 
-donde $\text{redondear}(x) = \text{Math.round}(x \cdot 100.0) / 100.0$.
+**Argumento.** Hay dos casos.
 
-**Teorema (corrección sobre los primeros $n$ elementos).** Para toda magnitud
-$m \in \mathbb{R}$ y todo $n \in \mathbb{N}$:
+- Si $g$ aparece en $r$, `groupBy` crea la clave $g$ con la lista de todos los
+  sismos de región $g$, es decir $r_g$. El `map` reemplaza esa lista por su
+  longitud, así que la clave $g$ responde $|r_g|$.
+- Si $g$ no aparece en $r$, la clave no existe en el mapa. `withDefaultValue(0)`
+  hace que `apply` responda $0$, y $|r_g| = 0$ porque $r_g = \emptyset$.
+
+Ambos casos cumplen la especificación, y ninguno lanza excepción. El caso base
+del registro vacío queda cubierto por el segundo caso para toda región.
+
+**Independencia del orden.** El grupo $r_g$ y su tamaño solo dependen de qué
+sismos hay en $r$ y no de la posición en que aparecen. Si $r'$ es una
+permutación de $r$, entonces $|r'_g| = |r_g|$ para toda $g$, y el mapa
+resultante es el mismo.
+
+### `maximaDe`
+
+**Especificación.**
 
 ```math
-\text{replicas}(m).\text{take}(n).\text{toList} == [R(m, 0), R(m, 1), \ldots, R(m, n - 1)]
+\text{maximaDe}(r, g) =
+\begin{cases}
+\text{None} & \text{si } r_g = \emptyset \\
+\text{Some}\big(\max \{\, s.\text{magnitud} \mid s \in r_g \,\}\big) & \text{si } r_g \neq \emptyset
+\end{cases}
 ```
 
-**Demostración por inducción sobre $n$:**
+**Corrección del `for` por inducción sobre la lista.** Sea
+$M(r, g)$ la lista que produce `for (s <- r if s.region == g) yield s.magnitud`.
+Se demuestra que $M(r, g)$ contiene exactamente las magnitudes de los sismos de
+$r_g$, en el orden en que aparecen.
 
-- **Caso base ($n = 0$):**
-  `take(0)` devuelve la secuencia vacía $\text{Nil}$ sin forzar ni la cabeza ni
-  la cola de `replicas(m)`, lo cual coincide con la lista vacía de longitud $0$
-  ($[]$).
+**Caso base:** $r = \text{Nil}$. El `for` no tiene elementos que recorrer y da
+$\text{Nil}$, que es la lista de magnitudes de $r_g = \emptyset$.
 
-- **Hipótesis de inducción (HI):**
-  Suponemos que para todo $m' \in \mathbb{R}$, pedir los primeros $k$ elementos
-  cumple:
+**Caso de inducción:** $r = s :: t$, con la hipótesis de inducción sobre $t$:
+$M(t, g)$ es la lista de magnitudes de $t_g$.
 
-```math
-\text{replicas}(m').\text{take}(k).\text{toList} == [R(m', 0), R(m', 1), \ldots, R(m', k - 1)]
-```
+- Si $s.\text{region} = g$, el guarda se cumple y
+  $M(s :: t, g) = s.\text{magnitud} :: M(t, g)$, que son las magnitudes de
+  $(s :: t)_g$.
+- Si $s.\text{region} \neq g$, el guarda falla y $M(s :: t, g) = M(t, g)$, que
+  son las magnitudes de $(s :: t)_g = t_g$.
 
-- **Paso inductivo ($n = k + 1$, con $k \geq 0$):**
-  Por definición de `replicas(m)` con el constructor perezoso `#::`, el primer
-  elemento es $\text{redondear}(m) = R(m, 0)$ y la cola suspendida es
-  `replicas(m * 0.8)`. Al extraer $k + 1$ elementos:
+Por inducción estructural, la propiedad vale para todo registro.
 
-```math
-\begin{aligned}
-\text{replicas}(m).\text{take}(k + 1).\text{toList}
-&\to \text{redondear}(m) :: \text{replicas}(m \cdot 0.8).\text{take}(k).\text{toList} \\
-&\overset{\text{HI}}{=} R(m, 0) :: [R(m \cdot 0.8, 0), R(m \cdot 0.8, 1), \ldots, R(m \cdot 0.8, k - 1)]
-\end{aligned}
-```
+**Cierre.** `maxOption` sobre una lista vacía devuelve `None` y sobre una lista
+no vacía devuelve `Some` del mayor elemento. Como $M(r, g)$ es vacía
+exactamente cuando $r_g = \emptyset$, el resultado coincide con la
+especificación en ambos casos.
 
-  Como $R(m \cdot 0.8, i) = \text{redondear}((m \cdot 0.8) \cdot 0.8^i) = \text{redondear}(m \cdot 0.8^{i+1}) = R(m, i + 1)$:
+### `regionMasActiva`
 
-```math
-= [R(m, 0), R(m, 1), \ldots, R(m, k)]
-```
+**Especificación.** Si $r = \emptyset$ el resultado es `None`. Si no, es
+`Some(g)` donde $g$ es la región con $|r_g|$ máximo y, entre las que empatan,
+la menor en orden alfabético.
 
-- **Terminación sobre prefijos:** Cada paso de `take(n)` consume exactamente un
-  elemento de la secuencia y reduce el contador $n$ en $1$ hasta llegar a $0$.
-  Como la cola de `#::` es por nombre, nunca se evalúan más de $n$ pasos y la
-  función termina en exactamente $n$ iteraciones.
+**Argumento.** Sea $G$ el conjunto de regiones de $r$, que son las claves de
+`groupBy`; cada región aparece una sola vez en la lista de parejas
+$(g, |r_g|)$. La función ordena con la clave $k(g) = (-|r_g|,\ g)$, comparada
+lexicográficamente.
 
-### `replicasSensibles`
+- Si $r = \emptyset$, $G = \emptyset$, la lista de parejas es vacía y
+  `headOption` da `None`.
+- Si $r \neq \emptyset$, $G$ es no vacío. Como las regiones son distintas, las
+  claves $k(g)$ son todas distintas y el orden lexicográfico es total
+  estricto sobre ellas. `sortBy` deja primero la pareja de clave mínima.
+- Esa clave mínima $k(g^\ast)$ cumple, por la primera componente, que
+  $-|r_{g^\ast}| \leq -|r_g|$ para toda $g$, es decir $|r_{g^\ast}| \geq |r_g|$:
+  $g^\ast$ tiene el conteo máximo. Si otra región $g$ tiene el mismo conteo,
+  la primera componente empata y decide la segunda: $g^\ast \leq g$
+  alfabéticamente.
 
-**Especificación.** Dado un umbral mínimo $\text{min}$, la función debe retornar
-el prefijo más largo de réplicas cuyo valor redondeado supere estrictamente a
-$\text{min}$:
+Entonces $g^\ast$ es la región más activa con la regla de desempate pedida.
+Como el resultado no depende del orden de las parejas que entrega el mapa,
+sino solo de la clave $k$, tampoco depende del orden de $r$.
 
-```math
-\text{replicasSensibles}(m, \text{min}) = [R(m, 0), R(m, 1), \ldots, R(m, k - 1)]
-```
 
-donde $k \geq 0$ es el menor índice tal que $R(m, k) \leq \text{min}$.
-
-**Argumento.**
-1. `takeWhile(_ > minimo)` recorre `replicas(m)` en orden desde $i = 0$
-   verificando la desigualdad estricta $R(m, i) > \text{min}$ sobre cada
-   elemento emitido.
-2. Si $R(m, 0) \leq \text{min}$ (es decir, incluso el sismo inicial no supera
-   el umbral), el predicado falla en el primer paso ($k = 0$) y retorna `Nil`.
-3. En otro caso, toma consecutivamente los elementos $R(m, 0), \ldots, R(m, k-1)$
-   y se detiene en el primer índice $k$ donde $R(m, k) \leq \text{min}$, sin
-   evaluar ningún término posterior ($i > k$).
-
-**Terminación.** Para toda magnitud $m$ y todo umbral físico $\text{min} \geq 0$:
-como $0 < 0.8 < 1$, la sucesión geométrica $m \cdot 0.8^i$ converge
-estrictamente a $0$ ($\lim_{i \to \infty} m \cdot 0.8^i = 0$). Al aplicarse el
-redondeo únicamente al emitir cada elemento ($\text{redondear}(m \cdot 0.8^i)$)
-y no sobre el argumento recursivo, existe un índice finito $i_0$ tal que
-$m \cdot 0.8^{i_0} < 0.005$, punto en el cual $R(m, i_0) = 0.0 \leq \text{min}$.
-Esto garantiza que `takeWhile` siempre encuentra una condición de parada en un
-número finito de pasos, incluso para umbrales muy pequeños como $0.01$.
