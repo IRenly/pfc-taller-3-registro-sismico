@@ -128,6 +128,152 @@ sequenceDiagram
     L5-->>Main: return 120
 ```
 
+## Punto 1: Consultas con Expresiones For
+
+### Definición del Algoritmo - `fuertes`
+```scala
+def fuertes(r: Registro, umbral: Double): List[String] = {
+   for {
+      reg <- r 
+      if reg.magnitud > umbral
+   } yield reg.region
+}
+``` 
+La función fuertes recibe un registro `r` y un valor `umbral`. Obtiene las regiones con magnitud superior al umbral establecido y las devuelve en un `List[String]`.
+
+Recibe dos parametros:
+
+- r: Registros que se desea consultar.
+- umbral: Valor de magnitud que debe superarse.
+
+### Definición del Algoritmo - `enRegion`
+```scala
+def enRegion(r: Registro, region: String): List[Double] = {
+   for {
+      reg <- r
+      if reg.region.indexOf(region) >= 0
+   } yield reg.magnitud
+}
+``` 
+La función recibe un registro `r` y un string `region`. Obtiene las magnitudes de los registros donde la región sea igual al parametro `region` y devuelve los valores obtenidos en un `List[Double]`.
+
+Recibe dos parametros:
+- `r`: Registros a consultar.
+- `region`: Nombre de la región para la consulta.
+
+### Definición del Algoritmo - `paresCercanos`
+```scala
+def paresCercanos(r: Registro, dif: Double): List[(String, String)] = {
+   val ordenRegiones = (for(reg <- r) yield reg.region).distinct
+
+   (for{
+      x <- ordenRegiones
+      xs <- ordenRegiones.dropWhile(_ != x).drop(1)
+
+      reg1 <- r if x == reg1.region
+      reg2 <- r if xs == reg2.region
+
+      if (reg1.magnitud - reg2.magnitud).abs <= dif
+   }yield (reg1.region, reg2.region)).distinct
+}
+``` 
+La función recibe un registro `r` y un double, `dif`, para la diferencia máxima entre magnitudes. Esta encuentra parejas de regiones distintas con registros que tengan una diferencia entre sus magnitudes menor o igual al parametro establecido.
+
+Recibe dos parametros:
+
+`r`: Registros a consultar.
+`dif`: Diferencia máxima permitida entre las magnitudes de dos registros.
+
+### Explicación Paso a Paso
+#### `fuertes( )`
+- Se utiliza una expresión for para recorrer todos los elementos de `r`.
+- En cada iteración, se obtiene un registro mediante `reg <- r`.
+- Se aplica el filtro `if reg.magnitud > umbral`, para continuar unicamente con los registros con magnitud mayor al umbral.
+- Finalmente, con `yield reg.region` se obtiene la región de cada registro que cumple con la condición.
+#### `enRegion( )`
+- Se recorren los registros mediante `reg <- r`.
+- Se utiliza `reg.region.indexOf(region) >= 0` para comprobar si el registro contiene el valor del parametro `region`.
+- Si `indexOf` encuentra el texto, devuelve una posición mayor o igual a cero. En caso contrario, devuelve -1.
+- Mediante `yield reg.magnitud`, se obtienen las magnitudes de cada registro que cumple la condición.
+#### `paresCercanos( )`
+1. Se construye una lista con las regiones sin repetir y en el orden en que aparecen en el registro:
+
+```scala
+val ordenRegiones = (for(reg <- r) yield reg.region).distinct
+```
+- Se recorre el registro utilizando una expresión for.
+- Con `yield reg.region` se obtiene el nombre de cada región.
+- Se aplica `distinct` para eliminar las regiones repetidas.
+
+2. Luego se utiliza otra expresión for para generar las parejas utilizando la lista `ordenRegiones`:
+
+- `x <- ordenRegiones`: selecciona una región de la lista.
+- `xs <- ordenRegiones.dropWhile(_ != x).drop(1)`: obtiene las regiones que aparecen después de x, utlizando `dropWhile` y `drop(1)` para evitar generar parejas repetidas o parejas de una región consigo misma.
+- `reg1 <- r if x == reg1.region`: busca los registros correspondientes a la primera región.
+- `reg2 <- r if xs == reg2.region`: busca los registros correspondientes a la segunda región.
+- `if (reg1.magnitud - reg2.magnitud).abs <= dif`: comprueba que la diferencia absoluta entre las magnitudes sea menor o igual al límite establecido.
+- `yield (reg1.region, reg2.region)`: construye una pareja con las dos regiones que cumplen la condición.
+- Al final se utiliza `distinct` para eliminar las parejas duplicadas del resultado.
+
+### Traducción de For Expressions
+#### `fuertes( )`
+```scala
+for {
+   reg <- r 
+   if reg.magnitud > umbral
+} yield reg.region
+```
+```math
+\downarrow
+```
+```scala
+r.withFilter(reg => reg.magnitud > umbral).map(reg => reg.region)
+```
+---
+### `enRegion( )`
+```scala
+for {
+   reg <- r
+   if reg.region.indexOf(region) >= 0
+} yield reg.magnitud
+```
+```math
+\downarrow
+```
+```scala
+r.withFilter(reg => reg.region.indexOf(region) >= 0).map(reg => reg.magnitud)
+```
+---
+### `paresCercanos( )`
+```scala
+val ordenRegiones = (for(reg <- r) yield reg.region).distinct
+
+for{
+   x <- ordenRegiones
+   xs <- ordenRegiones.dropWhile(_ != x).drop(1)
+
+   reg1 <- r if x == reg1.region
+   reg2 <- r if xs == reg2.region
+
+   if (reg1.magnitud - reg2.magnitud).abs <= dif
+}yield (reg1.region, reg2.region)).distinct   
+```
+```math
+\downarrow
+```
+```scala
+val ordenRegiones = r.map(_.region).distinct
+
+ordenRegiones.flatMap(x =>
+   ordenRegiones.dropWhile(_ != x).drop(1).flatMap(xs =>
+      r.withFilter(reg1 => x == reg1.region).flatMap(reg1 =>
+         r.withFilter(reg2 => xs == reg2.region).withFilter(reg2 =>
+         (reg1.magnitud - reg2.magnitud).abs <= dif).map(reg2 =>(reg1.region, reg2.region))
+      )
+   )
+).distinct
+```
+---
 ## Punto 3: consultas seguras
 
 Código del punto (en `RegistroSismico.scala`):

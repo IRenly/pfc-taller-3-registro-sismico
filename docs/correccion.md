@@ -280,6 +280,127 @@ Esto implica que $P_f(L) == \text{maxAux}(L.\text{head}, L.\text{tail}) == f(L)$
 
 ---
 
+## Punto 1: Consultas con Expresiones For
+
+### 1.1 `fuertes( )`
+
+La función devuelve las regiones de los sismos con magnitud que supera el umbral, conservando el orden y los repetidos.
+
+**Especificación:**
+
+$$
+\operatorname{fuertes}(r,u)=
+[\;s.region\mid s\in r\land s.magnitud>u\;]
+$$
+
+**Demostración.**
+
+**Caso base:** \(r=\text{Nil}\).
+
+El `for` no tiene elementos que recorrer y produce `Nil`, que coincide con una lista de registros vacía.
+
+**Caso de inducción:** \(r=s::t\), si \(F(t,u)\) contiene exactamente las regiones de los sismos de \(t\) cuya magnitud supera \(u\).
+
+- Si \(s.\text{magnitud}>u\), el guarda se cumple y:
+
+  \[
+  F(s::t,u)=s.\text{region}::F(t,u)
+  \]
+
+  Se agrega la región de \(s\), que cumple la condición, seguida de las regiones seleccionadas de \(t\).
+
+- Si \(s.\text{magnitud}\leq u\), el guarda falla y:
+
+  \[
+  F(s::t,u)=F(t,u)
+  \]
+
+  No se agrega ninguna región y se conservan las seleccionadas de \(t\).
+
+En ambos casos, el resultado contiene exactamente las regiones que cumplen la condición, en el orden original.
+
+**Independencia del orden.**
+
+No depende del orden. Si \(r'\) es una permutación de \(r\), ambas listas contienen las mismas regiones con las mismas multiplicidades, aunque posiblemente en posiciones diferentes.
+
+### 1.2 `enRegion( )`
+
+La función devuelve las magnitudes de los sismos de la región indicada.
+
+**Especificación:**
+
+$$
+\operatorname{enRegion}(r,z)=
+[\;s.magnitud\mid s\in r
+\land z\text{ aparece en }s.region\;]
+$$
+
+**Demostración.**
+
+**Caso base:** \(r=\text{Nil}\).
+
+Al igual que en `fuertes( )`, el `for` no tiene elementos que recorrer y produce `Nil`. Ante una lista de registros vacía, el resultado también es una lista vacía.
+
+**Caso de inducción:** \(r=s::t\), si \(E(t,z)\) contiene las magnitudes de los sismos de \(t\) cuya región contiene \(z\).
+
+- Si `s.region.indexOf(z) >= 0`, el guarda se cumple y:
+
+  \[
+  E(s::t,z)=s.\text{magnitud}::E(t,z)
+  \]
+
+  Se agrega la magnitud de \(s\), pues su región contiene \(z\).
+
+- Si `s.region.indexOf(z) < 0`, el guarda falla y:
+
+  \[
+  E(s::t,z)=E(t,z)
+  \]
+
+  No se agrega la magnitud de \(s\) y se conservan las seleccionadas de \(t\).
+
+En ambos casos, el resultado contiene exactamente las magnitudes que cumplen la condición, en el orden original.
+
+**Independencia del orden.**
+
+Si \(r'\) es una permutación de \(r\), ambas listas contienen las mismas magnitudes con las mismas multiplicidades, aunque posiblemente en posiciones diferentes.
+
+### 1.3 `paresCercanos( )`
+
+La función devuelve parejas de regiones distintas que tienen sismos con una diferencia entre sus magnitudes de máximo $d$.
+
+**Especificación:**
+
+$$
+\begin{aligned}
+\operatorname{paresCercanos}(r,d)=
+\{(x,y)\mid\;&x\neq y\ \land\\
+&\exists a,b\in r:\\
+&a.region=x\land b.region=y\\
+&\land |a.magnitud-b.magnitud|\leq d
+\}
+\end{aligned}
+$$
+
+**Demostración.**
+
+**Caso base:** \(r=\text{Nil}\).
+
+No hay sismos ni regiones que comparar. Por tanto, el resultado es un conjunto vacío.
+
+**Caso de inducción:** \(r=s::t\), suponiendo que el resultado para \(t\) contiene todas las parejas que cumplen la condición.
+
+- Si \(s.\text{region}\) ya aparece en \(t\), `distinct` evita repetir la región. Pero el nuevo sismo puede hacer que aparezcan nuevas parejas al cumplir la condición de cercanía.
+- Si \(s.\text{region}\) no aparece en \(t\), se agrega una nueva región y se compara con las demás para encontrar parejas que cumplan la condición.
+
+En ambos casos se consideran todas las parejas válidas y `distinct` evita repeticiones.
+
+**Independencia del orden.**
+
+Sea \(r'\) una permutación de \(r\).
+
+Las mismas regiones y combinaciones de sismos se consideran independientemente del orden de entrada. Además, el valor absoluto hace que la comparación de magnitudes no dependa de cuál sismo se considere primero.
+
 ## Punto 3: consultas seguras
 
 Sea $r$ un registro (una lista de sismos). Para una región $g$ se define el
