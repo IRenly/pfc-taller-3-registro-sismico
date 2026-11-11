@@ -279,6 +279,8 @@ $k$ iteraciones, $l = \text{List}()$.
 Esto implica que $P_f(L) == \text{maxAux}(L.\text{head}, L.\text{tail}) == f(L)$
 
 
+
+
 ## Punto 3: consultas seguras
 
 Sea $r$ un registro (una lista de sismos). Para una región $g$ se define el
@@ -369,3 +371,5 @@ lexicográficamente.
 Entonces $g^\ast$ es la región más activa con la regla de desempate pedida.
 Como el resultado no depende del orden de las parejas que entrega el mapa,
 sino solo de la clave $k$, tampoco depende del orden de $r$.
+
+
