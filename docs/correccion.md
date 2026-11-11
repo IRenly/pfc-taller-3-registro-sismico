@@ -277,3 +277,103 @@ s_0 = (a_1, \text{List}(a_2, \ldots, a_k)) \implies a_1 = f(\text{List}(a_1))
 $k$ iteraciones, $l = \text{List}()$.
 
 Esto implica que $P_f(L) == \text{maxAux}(L.\text{head}, L.\text{tail}) == f(L)$
+
+
+---
+
+## Punto 4: réplicas perezosas
+
+Como `replicas(m)` genera una secuencia potencialmente infinita, no tiene sentido
+enunciar la corrección sobre una terminación total de la estructura completa.
+Cada elemento se calcula únicamente cuando se pide; por lo tanto, la propiedad
+se enuncia y se demuestra sobre cualquier prefijo finito de los primeros $n$
+elementos solicitados.
+
+### `replicas`
+
+**Especificación.** Sea $R(m, i)$ el término en la posición $i \in \mathbb{N}$
+(contando desde $i = 0$) de la secuencia de réplicas que inicia en la magnitud
+$m$:
+
+```math
+R(m, i) = \text{redondear}(m \cdot 0.8^i)
+```
+
+donde $\text{redondear}(x) = \text{Math.round}(x \cdot 100.0) / 100.0$.
+
+**Teorema (corrección sobre los primeros $n$ elementos).** Para toda magnitud
+$m \in \mathbb{R}$ y todo $n \in \mathbb{N}$:
+
+```math
+\text{replicas}(m).\text{take}(n).\text{toList} == [R(m, 0), R(m, 1), \ldots, R(m, n - 1)]
+```
+
+**Demostración por inducción sobre $n$:**
+
+- **Caso base ($n = 0$):**
+  `take(0)` devuelve la secuencia vacía $\text{Nil}$ sin forzar ni la cabeza ni
+  la cola de `replicas(m)`, lo cual coincide con la lista vacía de longitud $0$
+  ($[]$).
+
+- **Hipótesis de inducción (HI):**
+  Suponemos que para todo $m' \in \mathbb{R}$, pedir los primeros $k$ elementos
+  cumple:
+
+```math
+\text{replicas}(m').\text{take}(k).\text{toList} == [R(m', 0), R(m', 1), \ldots, R(m', k - 1)]
+```
+
+- **Paso inductivo ($n = k + 1$, con $k \geq 0$):**
+  Por definición de `replicas(m)` con el constructor perezoso `#::`, el primer
+  elemento es $\text{redondear}(m) = R(m, 0)$ y la cola suspendida es
+  `replicas(m * 0.8)`. Al extraer $k + 1$ elementos:
+
+```math
+\begin{aligned}
+\text{replicas}(m).\text{take}(k + 1).\text{toList}
+&\to \text{redondear}(m) :: \text{replicas}(m \cdot 0.8).\text{take}(k).\text{toList} \\
+&\overset{\text{HI}}{=} R(m, 0) :: [R(m \cdot 0.8, 0), R(m \cdot 0.8, 1), \ldots, R(m \cdot 0.8, k - 1)]
+\end{aligned}
+```
+
+  Como $R(m \cdot 0.8, i) = \text{redondear}((m \cdot 0.8) \cdot 0.8^i) = \text{redondear}(m \cdot 0.8^{i+1}) = R(m, i + 1)$:
+
+```math
+= [R(m, 0), R(m, 1), \ldots, R(m, k)]
+```
+
+- **Terminación sobre prefijos:** Cada paso de `take(n)` consume exactamente un
+  elemento de la secuencia y reduce el contador $n$ en $1$ hasta llegar a $0$.
+  Como la cola de `#::` es por nombre, nunca se evalúan más de $n$ pasos y la
+  función termina en exactamente $n$ iteraciones.
+
+### `replicasSensibles`
+
+**Especificación.** Dado un umbral mínimo $\text{min}$, la función debe retornar
+el prefijo más largo de réplicas cuyo valor redondeado supere estrictamente a
+$\text{min}$:
+
+```math
+\text{replicasSensibles}(m, \text{min}) = [R(m, 0), R(m, 1), \ldots, R(m, k - 1)]
+```
+
+donde $k \geq 0$ es el menor índice tal que $R(m, k) \leq \text{min}$.
+
+**Argumento.**
+1. `takeWhile(_ > minimo)` recorre `replicas(m)` en orden desde $i = 0$
+   verificando la desigualdad estricta $R(m, i) > \text{min}$ sobre cada
+   elemento emitido.
+2. Si $R(m, 0) \leq \text{min}$ (es decir, incluso el sismo inicial no supera
+   el umbral), el predicado falla en el primer paso ($k = 0$) y retorna `Nil`.
+3. En otro caso, toma consecutivamente los elementos $R(m, 0), \ldots, R(m, k-1)$
+   y se detiene en el primer índice $k$ donde $R(m, k) \leq \text{min}$, sin
+   evaluar ningún término posterior ($i > k$).
+
+**Terminación.** Para toda magnitud $m$ y todo umbral físico $\text{min} \geq 0$:
+como $0 < 0.8 < 1$, la sucesión geométrica $m \cdot 0.8^i$ converge
+estrictamente a $0$ ($\lim_{i \to \infty} m \cdot 0.8^i = 0$). Al aplicarse el
+redondeo únicamente al emitir cada elemento ($\text{redondear}(m \cdot 0.8^i)$)
+y no sobre el argumento recursivo, existe un índice finito $i_0$ tal que
+$m \cdot 0.8^{i_0} < 0.005$, punto en el cual $R(m, i_0) = 0.0 \leq \text{min}$.
+Esto garantiza que `takeWhile` siempre encuentra una condición de parada en un
+número finito de pasos, incluso para umbrales muy pequeños como $0.01$.
