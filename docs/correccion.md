@@ -123,6 +123,99 @@ En ambos casos se consideran todas las parejas válidas y `distinct` evita repet
 Sea \(r'\) una permutación de \(r\).
 
 Las mismas regiones y combinaciones de sismos se consideran independientemente del orden de entrada. Además, el valor absoluto hace que la comparación de magnitudes no dependa de cuál sismo se considere primero.
+## Punto 2 : Agrupar por mapas
+
+1. Objetivo
+   El Punto 2 consiste en construir tres consultas sobre un registro
+   sísmico:
+- porRegion: agrupa los sismos según su región.
+- conteoPorRegion: calcula cuántos sismos hay en cada región.
+- magnitudMaxima: obtiene la mayor magnitud registrada en cada
+  región.
+  El modelo de datos utilizado es el proporcionado por el taller:
+  case class Fecha(anio: Int, mes: Int)
+
+case class Sismo(
+fecha: Fecha,
+region: String,
+magnitud: Double,
+profundidad: Int
+)
+
+type Registro = List[Sismo]
+2. Implementación
+   def porRegion(r: Registro): Map[String, List[Sismo]] = {
+   r.groupBy(_.region)
+   }
+
+def conteoPorRegion(r: Registro): Map[String, Int] = {
+porRegion(r).map {
+case (region, sismos) => region -> sismos.size
+}
+}
+
+def magnitudMaxima(r: Registro): Map[String, Double] = {
+porRegion(r).map {
+case (region, sismos) =>
+region -> sismos.map(_.magnitud).max
+}
+}
+Las tres funciones utilizan operaciones de colecciones inmutables. No se
+emplean variables mutables, ciclos iterativos ni instrucciones return.
+3. Argumento de corrección
+   Sea (R) el registro de entrada y sea (G) el conjunto de regiones que
+   aparecen en él. Para cada región (g \in {=tex}G), definimos:
+
+\(R_g = {s `\in `{=tex}R `\mid `{=tex}s.region = g}\)
+
+Es decir, (R_g) contiene todos los sismos del registro cuya región es
+(g).
+3.1. Corrección de porRegion
+La operación:
+r.groupBy(_.region)
+construye un mapa cuya llave es la región de cada sismo y cuyo valor es
+la colección de sismos que tienen esa región.
+
+Por tanto, para cada región (g) que aparece en el registro, el mapa
+cumple:
+
+\(porRegion(R)(g) = R_g\)
+
+Además, no se crean llaves para regiones que no aparecen en el registro.
+Si el registro está vacío, no existe ninguna región que agrupar y el
+resultado es:
+
+\(porRegion(\[\)) = Map() ]
+
+Así, cada sismo queda asociado a la llave correspondiente a su región.
+3.2. Corrección de conteoPorRegion
+La función parte del mapa producido por porRegion y transforma cada
+par región-lista en un par región-cantidad:
+porRegion(r).map {
+case (region, sismos) => region -> sismos.size
+}
+Como sismos contiene exactamente los eventos de una región, su tamaño
+corresponde al número de sismos de esa región. Formalmente:
+
+\(conteoPorRegion(R)(g) = \|R_g\|\)
+
+Por consiguiente, el valor asociado a cada región es su cantidad exacta
+de registros.
+
+Si (R) está vacío, porRegion(R) produce un mapa vacío. La operación
+map sobre ese mapa también produce un mapa vacío:
+
+\(conteoPorRegion(\[\)) = Map() ]
+3.3. Corrección de magnitudMaxima
+La función transforma cada lista de sismos en la magnitud más alta de
+esa lista:
+porRegion(r).map {
+case (region, sismos) =>
+region -> sismos.map(_.magnitud).max
+}
+Primero, sismos.map(_.magnitud) obtiene las magnitudes de los sismos
+de una región. Después, max selecciona el mayor valor. Por tanto:
+undefined
 
 ## Punto 3: consultas seguras
 
