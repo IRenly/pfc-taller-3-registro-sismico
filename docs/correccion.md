@@ -12,39 +12,38 @@ La función devuelve las regiones de los sismos con magnitud que supera el umbra
 **Especificación:**
 
 $$
-\operatorname{fuertes}(r,u)=
-[\;s.region\mid s\in r\land s.magnitud>u\;]
+fuertes(r,u) = [s.region | s ∈ r, s.magnitud > u]
 $$
 
 **Demostración.**
 
-**Caso base:** \(r=\text{Nil}\).
+**Caso base:** `r = Nil`.
 
 El `for` no tiene elementos que recorrer y produce `Nil`, que coincide con una lista de registros vacía.
 
-**Caso de inducción:** \(r=s::t\), si \(F(t,u)\) contiene exactamente las regiones de los sismos de \(t\) cuya magnitud supera \(u\).
+**Caso de inducción:** `r = s :: t`, si `fuertes(t,u)` contiene exactamente las regiones de los sismos de `t` cuya magnitud supera `u`.
 
-- Si \(s.\text{magnitud}>u\), el guarda se cumple y:
+- Si `s.magnitud > u`, el guarda se cumple y:
 
-  \[
-  F(s::t,u)=s.\text{region}::F(t,u)
-  \]
+  ```math
+  fuertes(s :: t,u) = s.region :: fuertes(t,u)
+  ```
 
-  Se agrega la región de \(s\), que cumple la condición, seguida de las regiones seleccionadas de \(t\).
+  Se agrega la región de `s`, que cumple la condición, seguida de las regiones seleccionadas de `t`.
 
-- Si \(s.\text{magnitud}\leq u\), el guarda falla y:
+- Si `s.magnitud <= u`, el guarda falla y:
 
-  \[
-  F(s::t,u)=F(t,u)
-  \]
+  ```math
+  fuertes(s :: t,u) = fuertes(t,u)
+  ```
 
-  No se agrega ninguna región y se conservan las seleccionadas de \(t\).
+  No se agrega ninguna región y se conservan las seleccionadas de `t`.
 
 En ambos casos, el resultado contiene exactamente las regiones que cumplen la condición, en el orden original.
 
 **Independencia del orden.**
 
-No depende del orden. Si \(r'\) es una permutación de \(r\), ambas listas contienen las mismas regiones con las mismas multiplicidades, aunque posiblemente en posiciones diferentes.
+No depende del orden. Si `r'`es una permutación de `r`, ambas listas contienen las mismas regiones con las mismas multiplicidades, aunque posiblemente en posiciones diferentes.
 
 ### 1.2 `enRegion( )`
 
@@ -52,41 +51,39 @@ La función devuelve las magnitudes de los sismos de la región indicada.
 
 **Especificación:**
 
-$$
-\operatorname{enRegion}(r,z)=
-[\;s.magnitud\mid s\in r
-\land z\text{ aparece en }s.region\;]
-$$
+```math
+enRegion(r,z) = [s.magnitud | s ∈ r, z aparece en s.region]
+```
 
 **Demostración.**
 
-**Caso base:** \(r=\text{Nil}\).
+**Caso base:** `r = Nil`.
 
 Al igual que en `fuertes( )`, el `for` no tiene elementos que recorrer y produce `Nil`. Ante una lista de registros vacía, el resultado también es una lista vacía.
 
-**Caso de inducción:** \(r=s::t\), si \(E(t,z)\) contiene las magnitudes de los sismos de \(t\) cuya región contiene \(z\).
+**Caso de inducción:** `r = s :: t`, si `enRegion(t,z)` contiene las magnitudes de los sismos de `t` cuya región contiene `z`.
 
 - Si `s.region.indexOf(z) >= 0`, el guarda se cumple y:
 
-  \[
-  E(s::t,z)=s.\text{magnitud}::E(t,z)
-  \]
+  ```math
+  enRegion(s :: t,z) = s.magnitud :: enRegion(t,z)
+  ```
 
-  Se agrega la magnitud de \(s\), pues su región contiene \(z\).
+  Se agrega la magnitud de `s`, pues su región contiene `z`.
 
 - Si `s.region.indexOf(z) < 0`, el guarda falla y:
 
-  \[
-  E(s::t,z)=E(t,z)
-  \]
+  ```math
+  enRegion(s :: t,z) = enRegion(t,z)
+  ```
 
-  No se agrega la magnitud de \(s\) y se conservan las seleccionadas de \(t\).
+  No se agrega la magnitud de `s` y se conservan las seleccionadas de `t`.
 
 En ambos casos, el resultado contiene exactamente las magnitudes que cumplen la condición, en el orden original.
 
 **Independencia del orden.**
 
-Si \(r'\) es una permutación de \(r\), ambas listas contienen las mismas magnitudes con las mismas multiplicidades, aunque posiblemente en posiciones diferentes.
+Si `r'` es una permutación de `r`, ambas listas contienen las mismas magnitudes con las mismas multiplicidades, aunque posiblemente en posiciones diferentes.
 
 ### 1.3 `paresCercanos( )`
 
@@ -94,33 +91,27 @@ La función devuelve parejas de regiones distintas que tienen sismos con una dif
 
 **Especificación:**
 
-$$
-\begin{aligned}
-\operatorname{paresCercanos}(r,d)=
-\{(x,y)\mid\;&x\neq y\ \land\\
-&\exists a,b\in r:\\
-&a.region=x\land b.region=y\\
-&\land |a.magnitud-b.magnitud|\leq d
-\}
-\end{aligned}
-$$
+```math
+paresCercanos(r,d) = {(x,y) | x != y, existen a,b ∈ r tales que:
+a.region = x, b.region = y y |a.magnitud - b.magnitud| <= d}
+```
 
 **Demostración.**
 
-**Caso base:** \(r=\text{Nil}\).
+**Caso base:** `r = Nil`.
 
 No hay sismos ni regiones que comparar. Por tanto, el resultado es un conjunto vacío.
 
-**Caso de inducción:** \(r=s::t\), suponiendo que el resultado para \(t\) contiene todas las parejas que cumplen la condición.
+**Caso de inducción:** `r = s :: t`, suponiendo que el resultado para `t` contiene todas las parejas que cumplen la condición.
 
-- Si \(s.\text{region}\) ya aparece en \(t\), `distinct` evita repetir la región. Pero el nuevo sismo puede hacer que aparezcan nuevas parejas al cumplir la condición de cercanía.
-- Si \(s.\text{region}\) no aparece en \(t\), se agrega una nueva región y se compara con las demás para encontrar parejas que cumplan la condición.
+- Si `s.region` ya aparece en `t`, `distinct` evita repetir la región. Pero el nuevo sismo puede hacer que aparezcan nuevas parejas al cumplir la condición de cercanía.
+- Si `s.region` no aparece en `t`, se agrega una nueva región y se compara con las demás para encontrar parejas que cumplan la condición.
 
 En ambos casos se consideran todas las parejas válidas y `distinct` evita repeticiones.
 
 **Independencia del orden.**
 
-Sea \(r'\) una permutación de \(r\).
+Sea `r'` una permutación de `r`.
 
 Las mismas regiones y combinaciones de sismos se consideran independientemente del orden de entrada. Además, el valor absoluto hace que la comparación de magnitudes no dependa de cuál sismo se considere primero.
 ## Punto 2 : Agrupar por mapas
@@ -411,26 +402,30 @@ número finito de pasos, incluso para umbrales muy pequeños como $0.01$.
 ### `informe`
 La función devuelve un mapa donde cada región tiene un resumen con su cantidad de sismos, magnitud máxima y cantidad de réplicas que superan el mínimo establecido.
 
-Sea $r$ un registro de sismos y sea $G$ el conjunto de regiones presentes en él.
+Sea `r` un registro de sismos y sea `G` el conjunto de regiones presentes en él.
 
-Para cada región $g$ se define:
+Para cada región `g` se define:
 
-$$r_g = \{s \in r \mid s.region = g\}$$
+$$
+r_g = \{s \in r \mid s.region = g\}
+$$
 
 También se define la magnitud máxima de cada región:
 
-$$M_g = \max\{s.magnitud \mid s \in r_g\}$$
+$$
+M_g = \max\{s.magnitud \mid s \in r_g\}
+$$
 
 **Especificación**
 
-Para toda región $g \in G$:
+Para toda región `g` perteneciente a `G`:
 
 $$
-\operatorname{informe}(r,min)(g) =
-\operatorname{Resumen}(
+informe(r,min)(g) =
+Resumen(
 |r_g|,
 M_g,
-|\operatorname{replicasSensibles}(M_g,min)|
+|replicasSensibles(M_g,min)|
 )
 $$
 
@@ -438,7 +433,7 @@ Es decir, el resumen debe contener el número de sismos de la región, su magnit
 
 **Demostración**
 
-**Caso base:** $r = \text{Nil}$.
+**Caso base:** `r = Nil`.
 
 Si el registro está vacío, no existen regiones ni sismos que procesar.
 
@@ -450,15 +445,17 @@ Por lo tanto:
 
 Entonces:
 
-$$\operatorname{informe}(\text{Nil},min)=\text{Map}()$$
+$$
+informe(Nil,min) = Map()
+$$
 
 Esto coincide con la especificación, porque no existen regiones para las cuales construir un resumen.
 
-**Caso de inducción:** $r = s :: t$.
+**Caso de inducción:** `r = s :: t`.
 
 Suponemos que las operaciones utilizadas calculan correctamente los conteos, máximos y cantidades de réplicas para los sismos de cada región.
 
-Sea $g$ una región presente en $r$.
+Sea `g` una región presente en `r`.
 
 Al ejecutar:
 
@@ -469,9 +466,13 @@ val magMax = magnitudMaxima(r)
 
 Se obtienen dos resultados:
 
-$$\text(g)=|r_g|$$
+$$
+conteo(g) = |r_g|
+$$
 
-$$\text(g)=M_g$$
+$$
+magMax(g) = M_g
+$$
 
 Ahora se evalúa:
 
@@ -485,13 +486,13 @@ magMax.map{
     )
 }
 ```
-Para la región $g$, el resultado es:
+Para la región `g`, el resultado es:
 
 $$
-\operatorname(
+Resumen(
 |r_g|,
 M_g,
-|\operatorname(M_g,min)|
+|replicasSensibles(M_g,min)|
 )
 $$
 
@@ -503,7 +504,7 @@ Cada componente coincide con la especificación:
 
 - replicasSensibles(magMax,minimo).size cuenta las réplicas cuya magnitud supera el mínimo.
 
-El resumen construido para $g$ es correcto.
+El resumen construido para `g` es correcto.
 
 Como map realiza esta operación para cada pareja del mapa de magnitudes máximas, se construye un resumen correcto para todas las regiones presentes en el registro.
 
@@ -511,34 +512,43 @@ Concluimos que:
 
 $$
 \forall g \in G:
-\operatorname(r,min)(g)
-\operatorname(
+$$
+
+$$
+informe(r,min)(g) =
+Resumen(
 |r_g|,
 M_g,
-|\operatorname(M_g,min)|
+|replicasSensibles(M_g,min)|
 )
 $$
 
 **Independencia del orden**
-Sea $r'$ una permutación de $r$.
+Sea `r'` una permutación de `r`.
 
-$$\operatorname(r,min)=\operatorname(r',min)$$
+$$
+informe(r,min) = informe(r',min)
+$$
 
 Para esto se consideran las tres operaciones utilizadas:
 
 * Conteo: las permutaciones no modifican la cantidad de sismos de cada región. Por lo tanto:
 
-$$|r_g|=|r'_g|$$
+$$
+|r_g| = |r'_g|
+$$
 
 * Magnitud máxima: el máximo de un conjunto de magnitudes no cambia por modificar su orden. Entonces:
 
-$$M_g=M'_g$$
+$$
+M_g = M'_g
+$$
 
 * Réplicas: como se utiliza la misma magnitud máxima y el mismo mínimo, se obtiene la misma lista de réplicas sensibles y, por lo tanto, la misma cantidad:
 
 $$
-|\operatorname(M_g,min)|
-|\operatorname(M'_g,min)|
+|replicasSensibles(M_g,min)| =
+|replicasSensibles(M'_g,min)|
 $$
 
 Como los tres valores del resumen son iguales para cada región, los mapas resultantes también son iguales.
@@ -546,6 +556,5 @@ Como los tres valores del resumen son iguales para cada región, los mapas resul
 Por lo tanto:
 
 $$
-\operatorname{informe}(r,min) = \operatorname{informe}(r',min)
-
+informe(r,min) = informe(r',min)
 $$
