@@ -178,6 +178,161 @@ sequenceDiagram
     I-->>M: Map[String, Resumen]
 ```
 ---
+## Punto 2: Agrpar por mapas
+
+Propósito
+El Punto 2 solicita implementar tres funciones para resumir un registro
+sísmico por región:
+- porRegion: agrupa los sismos que pertenecen a una misma región.
+- conteoPorRegion: calcula la cantidad de sismos de cada región.
+- magnitudMaxima: obtiene la mayor magnitud registrada en cada
+  región.
+  Las funciones trabajan con el tipo Registro, definido en el material
+  como una lista de elementos Sismo.
+2. Código implementado
+   def porRegion(r: Registro): Map[String, List[Sismo]] = {
+   r.groupBy(_.region)
+   }
+
+def conteoPorRegion(r: Registro): Map[String, Int] = {
+porRegion(r).map {
+case (region, sismos) => region -> sismos.size
+}
+}
+
+def magnitudMaxima(r: Registro): Map[String, Double] = {
+porRegion(r).map {
+case (region, sismos) =>
+region -> sismos.map(_. magnitud).max
+}
+}
+3. Proceso de ejecución de cada función
+   3.1. Función porRegion
+   Entrada: un registro r, que es una lista de sismos.
+
+Proceso:
+1. La función recibe la lista de sismos.
+2. Ejecuta groupBy(_.region).
+3. groupBy examina el campo region de cada elemento de la lista.
+4. Los sismos que tienen el mismo nombre de región quedan agrupados en
+   una misma lista.
+5. Se construye un mapa en el que cada llave es el nombre de una región
+   y cada valor es la lista de sismos correspondiente.
+   Salida: un Map[String, List[Sismo]].
+
+Si el registro está vacío, no hay elementos para agrupar y el resultado
+es Map().
+3.2. Función conteoPorRegion
+Entrada: un registro r.
+
+Proceso:
+1. La función llama a porRegion(r) para obtener el mapa de sismos
+   agrupados.
+2. Sobre ese mapa ejecuta map, que transforma cada entrada en una
+   nueva entrada.
+3. case (region, sismos) descompone cada par en el nombre de la
+   región y la lista de sismos asociados.
+4. sismos.size calcula cuántos elementos contiene esa lista.
+5. region -> sismos.size crea un nuevo par: conserva la región como
+   llave y utiliza la cantidad de sismos como valor.
+6. El resultado de map es un nuevo mapa con los conteos.
+   Salida: un Map[String, Int].
+
+Si el registro está vacío, porRegion(r) devuelve un mapa vacío. Al
+aplicar map sobre ese mapa no se generan entradas, por lo que el
+resultado también es Map().
+3.3. Función magnitudMaxima
+Entrada: un registro r.
+
+Proceso:
+1. La función llama a porRegion(r) para obtener los sismos agrupados
+   por región.
+2. Aplica map sobre las entradas del mapa.
+3. case (region, sismos) obtiene el nombre de la región y su lista de
+   sismos.
+4. sismos.map(_.magnitud) transforma la lista de objetos Sismo en
+   una lista que contiene únicamente sus magnitudes.
+5. .max obtiene el valor más alto de esa lista.
+6. region -> ... conserva la región como llave y asocia como valor la
+   magnitud máxima encontrada.
+7. El resultado es un mapa con una magnitud máxima por cada región
+   presente.
+   Salida: un Map[String, Double].
+
+La operación max se aplica a listas no vacías: cada región que aparece
+en el mapa fue obtenida de al menos un sismo del registro. Si el
+registro está vacío, no se calcula ningún máximo y el resultado es
+Map().
+4. Operaciones de programación funcional utilizadas
+   Operación Función dentro de la solución
+   groupBy: Agrupa los sismos usando el valor
+   del campo region.
+
+map:Transforma las entradas de un mapa
+sin modificar el mapa original.
+
+size                              Obtiene la cantidad de elementos de
+una lista de sismos.
+
+map(_. magnitud):Extrae las magnitudes de los sismos
+de una región.
+
+max:Selecciona la magnitud más alta de
+una lista.
+
+case (region, sismos):Descompone cada par llave-valor
+para trabajar con sus componentes.
+->Construye un par llave-valor para
+el mapa resultante.
+No se necesitan expresiones for en este punto, porque el enunciado
+solicita resolver estos agrupamientos mediante mapas. Tampoco se
+utilizan ciclos iterativos, variables mutables ni return.
+5. Ejecución con el registro de ejemplo
+   Al ejecutar las funciones con el registro proporcionado en el taller,
+   se obtienen los siguientes resultados esperados:
+   porRegion(registro)
+   El resultado es un mapa con tres llaves: "Valle", "Santander" y
+   "Choco". Cada llave contiene la lista de los sismos registrados en esa
+   región.
+   conteoPorRegion(registro)
+   Map(
+   "Valle" -> 3,
+   "Santander" -> 2,
+   "Choco" -> 2
+   )
+   El mapa indica que hay tres sismos en Valle, dos en Santander y dos en
+   Choco.
+   magnitudMaxima(registro)
+   Map(
+   "Valle" -> 5.3,
+   "Santander" -> 5.1,
+   "Choco" -> 6.0
+   )
+   El mapa contiene la mayor magnitud registrada en cada una de las tres
+   regiones.
+6. Consideraciones sobre el orden y los registros vacíos
+   Las funciones no dependen del orden de recorrido para calcular los
+   grupos, los conteos ni las magnitudes máximas. Cada sismo se agrupa
+   según su propia región; el tamaño de una lista no cambia al reordenar
+   sus elementos y el máximo de sus magnitudes tampoco cambia.
+
+El orden de los elementos dentro de las listas agrupadas puede reflejar
+el orden de entrada, pero ese orden no altera los conteos ni los
+máximos. Asimismo, no se debe asumir un orden específico al recorrer las
+llaves de un Map.
+
+Cuando el registro está vacío, las tres funciones devuelven mapas
+vacíos. Esto ocurre porque groupBy no encuentra elementos para agrupar
+y las operaciones posteriores sobre ese mapa no generan nuevas entradas.
+7. Conclusión
+   El proceso del Punto 2 se basa en agrupar primero los sismos por región
+   y reutilizar ese agrupamiento para calcular dos resúmenes: la cantidad
+   de eventos y la magnitud máxima. Las operaciones groupBy y map
+   permiten expresar estas transformaciones directamente sobre las
+   colecciones, sin recorrerlas mediante ciclos manuales ni modificar
+   datos. De esta manera, las funciones cumplen el enfoque de programación
+   funcional solicitado para este punto del taller.
+
 ## Punto 3: consultas seguras
 
 Código del punto (en `RegistroSismico.scala`):
