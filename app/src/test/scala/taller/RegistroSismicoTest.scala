@@ -230,4 +230,45 @@ class RegistroSismicoTest extends AnyFunSuite {
     assert(informe(registro, 3.0)("Choco").replicas ==
       replicasSensibles(6.0, 3.0).length)
   }
+  // Punto 5 | Pruebas Propias -------------------------------------------------
+  
+  // Registro propio para el punto 5
+  val p5reg: List[Sismo] = List(
+    Sismo(Fecha(2026,1), "Arauca", 4.2, 50),
+    Sismo(Fecha(2026,1), "Caldas", 2.0, 12),
+    Sismo(Fecha(2026,1), "Meta", 4.5, 60),
+    Sismo(Fecha(2026,1), "Meta", 5.7, 120),
+    Sismo(Fecha(2026,1), "Arauca", 1.5, 5),
+    Sismo(Fecha(2026,1), "Caldas", 3.2, 24),
+    Sismo(Fecha(2026,1), "Sucre", 4.1, 52),
+    Sismo(Fecha(2026,1), "Sucre", 4.1, 52),
+    Sismo(Fecha(2026,1), "Arauca", 3.7, 29)
+  )
+  test("informe [+]: las regiones que no superan el mínimo tienen un 0 en las replicas") {
+    assert(informe(p5reg, 4.1) ==
+      Map("Arauca" -> Resumen(3, 4.2, 1),
+          "Caldas" -> Resumen(2, 3.2, 0),
+          "Meta" -> Resumen(2, 5.7, 2),
+          "Sucre" -> Resumen(2, 4.1, 0)))
+  }
+
+  test("informe [+]: un minimo demasiado alto devuelve resumenes sin replicas sensibles"){
+    assert(informe(p5reg, 10.0) ==
+      Map("Arauca" -> Resumen(3, 4.2, 0),
+          "Caldas" -> Resumen(2, 3.2, 0),
+          "Meta" -> Resumen(2, 5.7, 0),
+          "Sucre" -> Resumen(2, 4.1, 0)))
+  }
+
+  test("informe [+]: las regiones del informe son las mismas que se obtienen de porRegion()"){
+    assert(informe(p5reg,3.0).keySet == porRegion(p5reg).keySet)
+  }
+
+  test("informe [+]: dos sismos iguales solo aumentan el conteo") {
+    assert(informe(p5reg, 3.0)("Sucre") == Resumen(2, 4.1,2))
+  }
+
+  test("informe [+]: el orden de la lista no importa"){
+    assert(informe(p5reg.reverse,3.0) == informe(p5reg, 3.0)) 
+  }
 }
